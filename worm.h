@@ -4,6 +4,8 @@
 #include <time.h>
 #include <curses.h>
 
+#define SHOW_INTRO		TRUE
+
 #define FOOD		'x'
 #define WORMUP			'^'
 #define WORMDOWN 		'v'
@@ -47,6 +49,7 @@ void DrawAssets(
 	int wrm_head_Y, int wrm_head_X, char wrm_headTurn, int wrm_allPos_Y[], 
 	int wrm_allPos_X[], int wrm_len, int food_no, int worldSize, int food_YX[][worldSize]);
 void Draw2dArray (int arr_Y, int arr_X, char arr[][arr_X]);
+void ShowIntro (int scrnMax_Y);
 
 void CharArrayColumnFill_2D(
 	int lineNo, int startCol, int endCol, 

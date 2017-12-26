@@ -251,6 +251,44 @@ void Draw2dArray (int arr_Y, int arr_X, char arr[][arr_X])
 	}
 }
 
+
+/*Shows dynamic on screen intro.*/
+void ShowIntro (int scrnMax_Y)
+{
+	attron (COLOR_PAIR(1));
+	int center_Y = scrnMax_Y / 2;
+	char head = WORMRIGHT, seg = WORMSEGMENT, food = FOOD;
+	int  headPos = 1, segPos = headPos -1, foodPos = headPos + 5; // X coords
+
+	for (int idx = 1; idx <= foodPos; ++idx) // Move worm right till food is reached.
+	{
+		mvprintw (center_Y, headPos, "%c", head);
+		mvprintw (center_Y, segPos, "%c", seg);
+		mvprintw (center_Y, foodPos, "%c", food);
+		++headPos, ++segPos;
+		refresh ();
+		usleep (900000);
+		clear ();
+	}
+	// Display worm along with extra segment, show logo.
+	mvprintw (center_Y, headPos, "%c", head);
+	mvprintw (center_Y, segPos, "%c", seg);
+	mvprintw (center_Y, segPos - 1, "%c", seg);
+	char logo[5][43] = 
+	{
+		{"    ===  |\\    |      /\\      |    /   |==="},
+		{"   |     | \\   |     /  \\     |   /    |   "},
+		{"   |     |  \\  |    /----\\    |==|     |==="},
+		{"   |     |   \\ |   /      \\   |   \\    |   "},
+		{"===      |    \\|  /        \\  |    \\   |==="}
+	};
+	Draw2dArray (5, 43, logo); // Draw logo after 'intro snake' eats food.
+	refresh ();
+	usleep (900000);
+	clear ();
+	attroff (COLOR_PAIR(1));
+}
+
 /*Fills a single column of 2D array with given char.*/
 void CharArrayColumnFill_2D(
 	int lineNo, int startCol, int endCol, 

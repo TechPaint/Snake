@@ -4,12 +4,14 @@
 int main()
 {
 	initscr (); // Initialize screen (stdscr).
+	int scrnMax_Y, scrnMax_X;
+	scrnMax_Y = scrnMax_X = 0;
+	getmaxyx( stdscr, scrnMax_Y, scrnMax_X );
+
 	// Set color pairs.
 	start_color ();
-	init_pair (1, COLOR_BLACK, COLOR_WHITE);
-	init_pair (2, COLOR_GREEN, COLOR_BLACK);
-	init_pair (3, COLOR_CYAN, COLOR_BLACK);
-	attron (COLOR_PAIR(1));
+	init_pair (1, COLOR_GREEN, COLOR_BLACK);
+	init_pair (2, COLOR_BLACK, COLOR_WHITE);
 	
 	cbreak (); // Disable line buffering.
 	curs_set (0); // Hide blinking cursor position.
@@ -18,38 +20,9 @@ int main()
 	keypad (stdscr, TRUE); // Collect input.
 	srand (time(NULL)); //Initialize random number generator.
 
+	if (SHOW_INTRO == TRUE) {ShowIntro (scrnMax_Y);}
 
-	// !!!    WorKing   !!!
-	/*Presents an on screen logo.*/
-	int Max_Y, Max_X;
-	Max_Y = Max_X = 0;
-	getmaxyx( stdscr, Max_Y, Max_X );
-	int center_Y = Max_Y / 2; // All assets are displayed at screen center.
-	char head = WORMRIGHT, seg = WORMSEGMENT, food = FOOD;
-	int  headPos = 1, segPos = headPos -1, foodPos = headPos + 5; // X coords
-
-	mvprintw (center_Y, foodPos, "%c", food); // Draw food
-	for (int idx = 1; idx < foodPos; ++idx) // Move worm right till food is reached.
-	{
-		mvprintw (center_Y, headPos, "%c", head);
-		mvprintw (center_Y, segPos, "%c", seg);
-		headPos = segPos += 1;
-		usleep (300000);
-		clear ();
-	}
-	
-	char logo[5][43] = 
-	{
-		{"   ===   |\\    |      /\\      |    /   |==="},
-		{"   |  \\  | \\   |     /  \\     |   /    |   "},
-		{"   |     |  \\  |    /----\\    |==|     |==="},
-		{"   |     |   \\ |   /      \\   |   \\    |   "},
-		{"\\===     |    \\|  /        \\  |    \\   |==="}
-	};
-
-	Draw2dArray (5, 43, logo); // Draw logo after 'intro snake' eats food.
-	
-	/*
+	attron (COLOR_PAIR(2));
 	int gameActive = TRUE;
 	// Create a game world.
 	int world_Y = 20;
@@ -107,7 +80,9 @@ int main()
 	endwin ();	// End curses.
 	
 	printf ("Final length: %d", wrm_len + 1);
-	*/
+	attroff (COLOR_PAIR(2));
+	
+	endwin ();	// End curses.
 	return 0;
 }
 
