@@ -2,6 +2,38 @@
 
 /*worKING*/
 
+/*Asks user to select world size*/
+void GetWorldSize (int *gameActive, int *food_max, int *world_Y, int *world_X, int scrnMax_Y, int scrnMax_X)
+{
+	int scrnCenter_Y = scrnMax_Y / 2, scrnCenter_X = scrnMax_X / 2;
+	attron (COLOR_PAIR(3));
+	mvprintw (0, scrnCenter_X / 2, "Please, pick world size (KeyArrows): ");
+	mvprintw (scrnCenter_Y, 0, "Large	<--");
+	mvprintw (scrnCenter_Y, scrnMax_X - 14, "->	Medium");
+	mvprintw (scrnMax_Y - 1, scrnCenter_X - 4, "v Small");
+	refresh ();
+	while (*world_Y == 0) // Wait until user chooses.
+	{
+		int c = getch();
+		if (c == KEY_LEFT) {*food_max = 5, *world_Y = WORLD_LARGE_Y; *world_X = WORLD_LARGE_X;}
+		else if (c == KEY_RIGHT) {*food_max = 3, *world_Y = WORLD_MEDIUM_Y; *world_X = WORLD_MEDIUM_X;}
+		else if (c == KEY_DOWN) {*food_max = 2, *world_Y = WORLD_SMALL_Y; *world_X = WORLD_SMALL_X;}
+	}
+	// Check if screen is big enough If not, match screen if it meets min. requirements.
+	if (scrnMax_Y < *world_Y || scrnMax_X < *world_X) 
+	{
+		clear ();
+		mvprintw (scrnCenter_Y, 0, "Screen size too small for this resolution.");
+		if (scrnMax_Y >= 8 && scrnMax_X >= 10) {*world_Y = scrnMax_Y; *world_X = scrnMax_X;}
+		else 
+		{
+			mvprintw (scrnCenter_Y + 1, 0, "Actually, for every resolution. Please, increase window size.");
+			*gameActive = FALSE;
+		}
+	}
+	clear ();
+	attroff (COLOR_PAIR(3));
+}
 
 /*WORM BEHAVIOR*/
 
@@ -9,10 +41,10 @@
 void InputRespond (char *wrm_headTurn)
 {
 	int c = getch();
-	if (c == KEY_UP) {*wrm_headTurn = WORMUP;}
-	else if (c == KEY_DOWN) {*wrm_headTurn = WORMDOWN;}
-	else if (c == KEY_LEFT) {*wrm_headTurn = WORMLEFT;}
-	else if (c == KEY_RIGHT) {*wrm_headTurn = WORMRIGHT;}
+	if (c == KEY_UP || c == 'w') {*wrm_headTurn = WORMUP;}
+	else if (c == KEY_DOWN || c == 's') {*wrm_headTurn = WORMDOWN;}
+	else if (c == KEY_LEFT || c == 'a') {*wrm_headTurn = WORMLEFT;}
+	else if (c == KEY_RIGHT || c == 'd') {*wrm_headTurn = WORMRIGHT;}
 }
 
 /*Checks, if worm ate his tail/hit wall. Returns 0 if game over.*/
@@ -251,29 +283,29 @@ void Draw2dArray (int arr_Y, int arr_X, char arr[][arr_X])
 	}
 }
 
-
 /*Shows dynamic on screen intro.*/
-void ShowIntro (int scrnMax_Y)
+void ShowIntro (int scrnMax_Y, int scrnMax_X)
 {
 	attron (COLOR_PAIR(1));
-	int center_Y = scrnMax_Y / 2;
+	int center_Y = scrnMax_Y / 2, center_X = scrnMax_X / 2;
 	char head = WORMRIGHT, seg = WORMSEGMENT, food = FOOD;
-	int  headPos = 1, segPos = headPos -1, foodPos = headPos + 5; // X coords
-
-	for (int idx = 1; idx <= foodPos; ++idx) // Move worm right till food is reached.
+	int  headPos = center_X, segPos = headPos -1, foodPos = headPos + 5; // X coords
+	while (headPos <= foodPos) // Move worm right till food is reached.
 	{
 		mvprintw (center_Y, headPos, "%c", head);
 		mvprintw (center_Y, segPos, "%c", seg);
 		mvprintw (center_Y, foodPos, "%c", food);
-		++headPos, ++segPos;
 		refresh ();
-		usleep (900000);
+		++headPos, ++segPos;
+		usleep (SECOND * 0.5);
 		clear ();
 	}
 	// Display worm along with extra segment, show logo.
 	mvprintw (center_Y, headPos, "%c", head);
 	mvprintw (center_Y, segPos, "%c", seg);
 	mvprintw (center_Y, segPos - 1, "%c", seg);
+	mvprintw (scrnMax_Y - 2, scrnMax_X - (scrnMax_X / 4), "%c", food); // Food aesthetics.
+	mvprintw ((scrnMax_Y / 2) - 2, scrnMax_X - (scrnMax_X / 4) * 3, "%c", food);
 	char logo[5][43] = 
 	{
 		{"    ===  |\\    |      /\\      |    /   |==="},
@@ -284,10 +316,32 @@ void ShowIntro (int scrnMax_Y)
 	};
 	Draw2dArray (5, 43, logo); // Draw logo after 'intro snake' eats food.
 	refresh ();
-	usleep (900000);
+	usleep (SECOND * 2);
 	clear ();
 	attroff (COLOR_PAIR(1));
 }
+
+/*Asks user to select dificulty.*/
+void GetDificulty (int *dificulty, int *wrm_step_len, int scrnMax_Y, int scrnMax_X)
+{
+	int scrnCenter_Y = scrnMax_Y / 2, scrnCenter_X = scrnMax_X / 2;
+	attron (COLOR_PAIR(2));
+	mvprintw (0, scrnCenter_X / 2, "Please, pick your dificulty (KeyArrows): ");
+	mvprintw (scrnCenter_Y, 0, "Easy	<--");
+	mvprintw (scrnCenter_Y, scrnMax_X - 14, "->	Medium");
+	mvprintw (scrnMax_Y - 1, scrnCenter_X - 4, "v Hard");
+	refresh ();
+	while (*dificulty == 0) // Wait until dificutly is chosen.
+	{
+		int c = getch();
+		if (c == KEY_LEFT) {*dificulty = DIFICULTY_EASY; *wrm_step_len = SECOND * 0.5;}
+		else if (c == KEY_RIGHT) {*dificulty = DIFICULTY_MEDIUM; *wrm_step_len = SECOND * 0.3;}
+		else if (c == KEY_DOWN) {*dificulty = DIFICULTY_HARD;  *wrm_step_len = SECOND * 0.15;}
+	}
+	clear ();
+	attroff (COLOR_PAIR(2));
+}
+
 
 /*Fills a single column of 2D array with given char.*/
 void CharArrayColumnFill_2D(
