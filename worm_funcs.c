@@ -1,6 +1,5 @@
 #include "worm.h"
 
-/*worKING*/
 
 /*Asks user to select world size*/
 void GetWorldSize (int *gameActive, int *food_max, int *world_Y, int *world_X, int scrnMax_Y, int scrnMax_X)
@@ -15,16 +14,35 @@ void GetWorldSize (int *gameActive, int *food_max, int *world_Y, int *world_X, i
 	while (*world_Y == 0) // Wait until user chooses.
 	{
 		int c = getch();
-		if (c == KEY_LEFT) {*food_max = 5, *world_Y = WORLD_LARGE_Y; *world_X = WORLD_LARGE_X;}
-		else if (c == KEY_RIGHT) {*food_max = 3, *world_Y = WORLD_MEDIUM_Y; *world_X = WORLD_MEDIUM_X;}
-		else if (c == KEY_DOWN) {*food_max = 2, *world_Y = WORLD_SMALL_Y; *world_X = WORLD_SMALL_X;}
+		if (c == KEY_LEFT) 
+		{
+			*food_max = 5;
+			*world_Y = WORLD_LARGE_Y; 
+			*world_X = WORLD_LARGE_X;
+		}
+		else if (c == KEY_RIGHT) 
+		{
+			*food_max = 3;
+			*world_Y = WORLD_MEDIUM_Y; 
+			*world_X = WORLD_MEDIUM_X;
+		}
+		else if (c == KEY_DOWN) 
+		{
+			*food_max = 2;
+			*world_Y = WORLD_SMALL_Y; 
+			*world_X = WORLD_SMALL_X;
+		}
 	}
 	// Check if screen is big enough If not, match screen if it meets min. requirements.
 	if (scrnMax_Y < *world_Y || scrnMax_X < *world_X) 
 	{
 		clear ();
 		mvprintw (scrnCenter_Y, 0, "Screen size too small for this resolution.");
-		if (scrnMax_Y >= 8 && scrnMax_X >= 10) {*world_Y = scrnMax_Y; *world_X = scrnMax_X;}
+		if (scrnMax_Y >= 8 && scrnMax_X >= 10) 
+		{
+			*world_Y = scrnMax_Y; 
+			*world_X = scrnMax_X;
+		}
 		else 
 		{
 			mvprintw (scrnCenter_Y + 1, 0, "Actually, for every resolution. Please, increase window size.");
@@ -37,7 +55,7 @@ void GetWorldSize (int *gameActive, int *food_max, int *world_Y, int *world_X, i
 
 /*WORM BEHAVIOR*/
 
-/*Change's worm's direction based on user input.*/
+/*Changes head's direction based on user input.*/
 void InputRespond (char *wrm_headTurn)
 {
 	int c = getch();
@@ -54,8 +72,7 @@ int DidILose(
 {
 	int edge_Y = world_Y - 1, edge_X = world_X - 1;
 	// Top/Bottom edge of world breached.
-	if (wrm_head_Y <= 0 || wrm_head_Y >= edge_Y)
-	{return 0;}
+	if (wrm_head_Y <= 0 || wrm_head_Y >= edge_Y) {return 0;}
 	// Left/Right edge of world breached.
 	if (wrm_head_X <= 0 || wrm_head_X >= edge_X)
 	{return 0;}
@@ -63,7 +80,9 @@ int DidILose(
 	for (int idx = 0; idx < wrm_len; ++idx)
 	{
 		if (wrm_head_Y == wrm_allPos_Y[idx] && wrm_head_X == wrm_allPos_X[idx]) 
-		{return 0;}
+		{
+			return 0;
+		}
 	}
 	return 1;
 }
@@ -173,15 +192,23 @@ void SpawnFood(
 			for (int idx = 0; idx < *food_no; ++idx) // Food
 			{
 				if (ranPos_Y == wrm_allPos_Y[idx] && ranPos_X == wrm_allPos_X[idx]) 
-					{notFood = FALSE; break;}
+				{
+					notFood = FALSE; 
+					break;
+				}
 			}
 			for (int idx = wrm_len; idx >= 1; --idx)
 			{
 				if (ranPos_Y == wrm_allPos_Y[idx] && ranPos_X == wrm_allPos_X[idx]) 
-					{notSegment = FALSE; break;}
+				{
+					notSegment = FALSE; 
+					break;
+				}
 			}
 			if (notHead == TRUE && notFood == TRUE && notSegment == TRUE) 
-				{foundIt = TRUE;} // Nothing occupies chosen position. Break loop.
+			{
+				foundIt = TRUE;
+			} // Nothing occupies chosen position. Break loop.
 		}
 		food_YX[0][*food_no] = ranPos_Y; 
 		food_YX[1][*food_no] = ranPos_X; 
@@ -334,9 +361,21 @@ void GetDificulty (int *dificulty, int *wrm_step_len, int scrnMax_Y, int scrnMax
 	while (*dificulty == 0) // Wait until dificutly is chosen.
 	{
 		int c = getch();
-		if (c == KEY_LEFT) {*dificulty = DIFICULTY_EASY; *wrm_step_len = SECOND * 0.5;}
-		else if (c == KEY_RIGHT) {*dificulty = DIFICULTY_MEDIUM; *wrm_step_len = SECOND * 0.3;}
-		else if (c == KEY_DOWN) {*dificulty = DIFICULTY_HARD;  *wrm_step_len = SECOND * 0.15;}
+		if (c == KEY_LEFT) 
+		{
+			*dificulty = DIFICULTY_EASY; 
+			*wrm_step_len = SECOND * 0.5;
+		}
+		else if (c == KEY_RIGHT) 
+		{
+			*dificulty = DIFICULTY_MEDIUM; 
+			*wrm_step_len = SECOND * 0.3;
+		}
+		else if (c == KEY_DOWN) 
+		{
+			*dificulty = DIFICULTY_HARD;  
+			*wrm_step_len = SECOND * 0.2;
+		}
 	}
 	clear ();
 	attroff (COLOR_PAIR(2));
@@ -376,5 +415,3 @@ void ArrayFill_Int (int array[], int array_length, int fill_with_this)
 		array[i] = fill_with_this;
 	}
 }
-
-
