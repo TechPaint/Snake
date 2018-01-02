@@ -85,10 +85,13 @@ int main ()
 	}
 	// Deallocate memory, end game.
 	free (world);
-	
+
+	// ! ERROR ! - attempt to free non-heap object.
+	/*
 	free (food_YX);
 	free (wrm_allPos_YX);
-	
+	*/
+
 	attroff (COLOR_PAIR(4));
 	endwin ();	// End curses.
 	printf ("Final length: %d \n", wrm_len + 1);
@@ -216,7 +219,7 @@ void MoveWorm(
 void MoveSegments(int pos_Y, int pos_X, int *wrm_allPos_YX[], int wrm_len)
 {
 	//Move all segments (except 1st one) to X, Y of neigbour segment. 
-	int segmentLocX = 0, segmentLocY = 0, 
+	int segmentLocX = 0, segmentLocY = 0;
 	int nextSegment_Y = 0, nextSegment_X = 0;
 	for (int idx = wrm_len; idx >= 1; --idx)
 	{
@@ -244,7 +247,7 @@ void SpawnFood(
 	int *wrm_allPos_YX[], int wrm_len, int world_Y, 
 	int world_X, int food_max, int *food_no, int *food_YX[])
 {
-	int available_Y = world_Y - 2
+	int available_Y = world_Y - 2;
 	int available_X = world_X - 2; // Walls take space.
 	int noOfSpawns = rand() % (food_max) + 1; // Spawn 1 - Max food_max.
 	int foundIt, ranPos_Y, ranPos_X, notFood, notHead, notSegment;
@@ -295,7 +298,7 @@ void PlaceWorm(
 	int worldCenter_X = (world_X - 1) / 2 + 1;
 	//Pick one of 4 directions for worm's head, place 2nd segment in the opposite direction.
 	int headDirectionNo = rand() % (5 - 1) + 1; //Pick 1 of 4 directions for the head.
-	int segment_Y = worldCenter_Y
+	int segment_Y = worldCenter_Y;
 	int segment_X = worldCenter_X;
 
 	if (headDirectionNo == 1)
@@ -370,7 +373,7 @@ void DrawAssets(
 void ShowIntro (int scrnMax_Y, int scrnMax_X)
 {
 	attron (COLOR_PAIR(1));
-	int center_Y = scrnMax_Y / 2
+	int center_Y = scrnMax_Y / 2;
 	int center_X = scrnMax_X / 2;
 	
 	char head = WORMRIGHT, seg = WORMSEGMENT, food = FOOD;
@@ -410,7 +413,7 @@ void ShowIntro (int scrnMax_Y, int scrnMax_X)
 /*Asks user to select dificulty.*/
 void GetDificulty (int *dificulty, int *wrm_step_len, int scrnMax_Y, int scrnMax_X)
 {
-	int scrnCenter_Y = scrnMax_Y / 2
+	int scrnCenter_Y = scrnMax_Y / 2;
 	int scrnCenter_X = scrnMax_X / 2;
 	attron (COLOR_PAIR(2));
 	mvprintw (0, scrnCenter_X / 2, "Please, pick your dificulty (KeyArrows): ");
@@ -444,7 +447,7 @@ void GetDificulty (int *dificulty, int *wrm_step_len, int scrnMax_Y, int scrnMax
 /*Asks user to select world size*/
 void GetWorldSize (int *gameActive, int *food_max, int *world_Y, int *world_X, int scrnMax_Y, int scrnMax_X)
 {
-	int scrnCenter_Y = scrnMax_Y / 2
+	int scrnCenter_Y = scrnMax_Y / 2;
 	int scrnCenter_X = scrnMax_X / 2;
 	attron (COLOR_PAIR(3));
 	mvprintw (0, scrnCenter_X / 2, "Please, pick world size (KeyArrows): ");
