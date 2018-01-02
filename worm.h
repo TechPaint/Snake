@@ -33,7 +33,7 @@
 #define WORLD_SMALL_X		20
 
 
-int *IntArray_append (int add_me, int arr[], int arr_size);
+void IntArray_Realloc ( int *arr, int realloc_size);
 
 
 /*WORM BEHAVIOR*/
