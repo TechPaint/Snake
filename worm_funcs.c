@@ -1,20 +1,18 @@
 #include "worm.h"
 
-/*Reallocates memory (+1), append element to last pos. in array.*/ 
-int * IntArray_append (int add_me, int arr[], int arr_size)
+/*Reallocates int array to specified memory size.*/ 
+void IntArray_Realloc ( int *arr, int realloc_size)
 {
 	int *tmp = 0;
-	tmp = realloc (arr, arr_size + 1);
-	// Handle memory realloc failure by copying arr into new location.
+	tmp = realloc (arr, realloc_size);
+	// Handle memory realloc failure.
 	if (tmp == NULL) 
 	{
-		tmp = calloc (arr_size + 1, sizeof(int));
-		memcpy(tmp, arr, (arr_size + 1) * sizeof(int));
 		free (arr);
+		printf ("\n\t Error - realloc() failed.");
+		exit (1);
 	} 
 	arr = tmp;
-	arr[arr_size] = add_me;
-	return tmp;
 }
 
 
@@ -91,8 +89,10 @@ void IsItFood(
 void AddSegment(int newLoc_Y, int newLoc_X, int *wrm_len, int *wrm_allPos_YX[])
 {
 	*wrm_len += 1; // wormPositions are indexed from 0.
-	 wrm_allPos_YX[0] = IntArray_append (newLoc_Y, wrm_allPos_YX[0], *wrm_len);
-	 wrm_allPos_YX[1] = IntArray_append (newLoc_X, wrm_allPos_YX[1], *wrm_len);
+	IntArray_Realloc (wrm_allPos_YX[0], *wrm_len);
+	IntArray_Realloc (wrm_allPos_YX[1], *wrm_len);
+	wrm_allPos_YX[0][*wrm_len] = newLoc_Y;
+	wrm_allPos_YX[1][*wrm_len] = newLoc_X;
 }
 
 /*Moves worm's head along with segments.*/
