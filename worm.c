@@ -1,18 +1,20 @@
 #include "worm.h"
 
-
 int main ()
 {
-	initscr (); // Initialize screen (stdscr).
+	// Initialize screen.
+	initscr ();
 	int scrnMax_Y, scrnMax_X;
 	getmaxyx (stdscr, scrnMax_Y, scrnMax_X);
-	// Color(Pair)s.
+
+	// Color pairs.
 	start_color ();
 	init_pair (1, COLOR_GREEN, COLOR_BLACK); // Intro
 	init_pair (2, COLOR_RED, COLOR_BLACK); // DificultyPick 
 	init_pair (3, COLOR_WHITE, COLOR_BLACK); // WorldPick
 	init_pair (4, COLOR_BLACK, COLOR_WHITE); // Game
 
+	// NCurses tweaks.
 	cbreak (); // Disable line buffering.
 	curs_set (0); // Hide blinking cursor position.
 	nodelay (stdscr, TRUE); // Don't wait for EOF/newline on getch().
@@ -20,24 +22,26 @@ int main ()
 	keypad (stdscr, TRUE); // Collect input.
 	srand (time(NULL)); //Initialize random number generator.
 
-	// Intro, pick Dificulty & World.
-	if (SHOW_INTRO == TRUE) {ShowIntro (scrnMax_Y, scrnMax_X);}
-	int dificulty = 0, wrm_step_len = 0;
-	GetDificulty (&dificulty, &wrm_step_len, scrnMax_Y, scrnMax_X);
-	int gameActive = TRUE;
-	int world_Y = 0, world_X = 0;
-	int food_max = 0; // Max no. of food items in the map.
-	int food_no = 0; // Current no. of food items in the map.
 
-	// Create game world/w scoreboard.
-	// World is allocated array of pointers. (Each pointer is pointing to world row.)
+	int gameActive = TRUE;
+	int dificulty = 0, wrm_step_len = 0;
+	int food_max = 0; // Max no. of food items in world.
+	int food_no = 0; // Current no. of food items in world.
+	int world_Y = 0, world_X = 0;
+
+	// Show intro, ask for  Dificulty, World Size.
+	if (SHOW_INTRO == TRUE) {ShowIntro (scrnMax_Y, scrnMax_X);}
+	GetDificulty (&dificulty, &wrm_step_len, scrnMax_Y, scrnMax_X);
 	GetWorldSize (&gameActive, &food_max, &world_Y, &world_X, scrnMax_Y, scrnMax_X);
+
 	if (gameActive == FALSE) {return 1;} // Resolution error. Quit the game.
+
 	char *world[world_Y];
 	for (int i = 0; i < world_Y; ++i)
 	{
 		world[i] = calloc (world_X, sizeof (char));
 	}
+	// Create game world/w scoreboard.
 	CreateWorld (world_Y, world_X, world);
 	// Score is drawn separately from world.
 	int score = 0, score_Y = world_Y / 2, score_X = world_X + 2; 
@@ -48,12 +52,14 @@ int main ()
 	wrm_head_X = 1;
 	wrm_len = -1; //No. of worm segments (head is not segment).
 
-	// Y, X coords of the food (pointers to arrays holding them).
+
+	// ! Coord of every asset is stored in array located in pointer array. !
+	
 	int *food_YX[2];
 	food_YX[0] = calloc (food_max, sizeof (int));
 	food_YX[1] = calloc (food_max, sizeof (int));
 	
-	// Arrays holding Y, X coords of segments (indexed by wrmLength).
+	// Segments are indexed, stored by wrmLength.
 	int *wrm_allPos_YX[2];
 	wrm_allPos_YX[0] = calloc (1, sizeof (int));
 	wrm_allPos_YX[1] = calloc (1, sizeof (int));
@@ -105,18 +111,17 @@ int main ()
  * */
  
 /*Reallocates int array to specified memory size.*/ 
-void IntArray_Realloc ( int **arr, int realloc_size)
+int * IntArray_Realloc ( int *arr, int new_size)
 {
-	int *tmp = 0;
-	tmp = realloc (arr, realloc_size);
-	// Handle memory realloc failure.
-	if (tmp == NULL) 
+	int *temp = 0;
+	temp = realloc (arr, new_size * sizeof (int));
+	if (temp == NULL) // Handle memory realloc failure.
 	{
 		free (arr);
 		printf ("\n\t Error - realloc() failed.");
 		exit (1);
 	} 
-	*arr = tmp;
+	return temp; // Caller needs to assign new mem adress by itself.
 }
 
 
@@ -193,8 +198,8 @@ void IsItFood(
 void AddSegment(int newLoc_Y, int newLoc_X, int *wrm_len, int *wrm_allPos_YX[])
 {
 	*wrm_len += 1; // wormPositions are indexed from 0.
-	IntArray_Realloc (&wrm_allPos_YX[0], *wrm_len);
-	IntArray_Realloc (&wrm_allPos_YX[1], *wrm_len);
+	wrm_allPos_YX[0] = IntArray_Realloc (wrm_allPos_YX[0], *wrm_len);
+	wrm_allPos_YX[1] = IntArray_Realloc (wrm_allPos_YX[1], *wrm_len);
 	wrm_allPos_YX[0][*wrm_len] = newLoc_Y;
 	wrm_allPos_YX[1][*wrm_len] = newLoc_X;
 }
