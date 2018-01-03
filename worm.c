@@ -24,15 +24,22 @@ int main ()
 
 
 	int gameActive = TRUE;
-	int dificulty = 0, wrm_step_len = 0;
+		// DEBUG !!! int dificulty = 0,
+	int wrm_step_len = 0;
 	int food_max = 0; // Max no. of food items in world.
 	int food_no = 0; // Current no. of food items in world.
 	int world_Y = 0, world_X = 0;
 
 	// Show intro, ask for  Dificulty, World Size.
 	if (SHOW_INTRO == TRUE) {ShowIntro (scrnMax_Y, scrnMax_X);}
-	GetDificulty (&dificulty, &wrm_step_len, scrnMax_Y, scrnMax_X);
-	GetWorldSize (&gameActive, &food_max, &world_Y, &world_X, scrnMax_Y, scrnMax_X);
+
+	// DEBUG !!!
+	// GetDificulty (&dificulty, &wrm_step_len, scrnMax_Y, scrnMax_X);
+	// GetWorldSize (&gameActive, &food_max, &world_Y, &world_X, scrnMax_Y, scrnMax_X);
+	wrm_step_len = SECOND * 0.2;
+	food_max = 5;
+	world_Y = WORLD_LARGE_Y; 
+	world_X = WORLD_LARGE_X;
 
 	if (gameActive == FALSE) {return 1;} // Resolution error. Quit the game.
 
@@ -46,8 +53,8 @@ int main ()
 	// Score is drawn separately from world.
 	int score = 0, score_Y = world_Y / 2, score_X = world_X + 2; 
 
-	char wrm_headTurn;
-	int wrm_head_X, wrm_head_Y, wrm_len;
+	char wrm_headTurn = '0';
+	int wrm_head_X = 0, wrm_head_Y = 0, wrm_len = 0;
 	wrm_head_Y = 1;
 	wrm_head_X = 1;
 	wrm_len = -1; //No. of worm segments (head is not segment).
@@ -92,11 +99,10 @@ int main ()
 	// Deallocate memory, end game.
 	free (world);
 
-	// ! ERROR ! - attempt to free non-heap object.
-	/*
-	free (food_YX);
-	free (wrm_allPos_YX);
-	*/
+	// ! ERROR ! - attempt to free non-heap object unless pointer dereference added?.
+	free (*food_YX);
+	free (*wrm_allPos_YX);
+	
 
 	attroff (COLOR_PAIR(4));
 	endwin ();	// End curses.
@@ -171,7 +177,7 @@ void IsItFood(
 			*score += 1;
 			mvprintw (score_Y, score_X, "Score: %d", *score);
 
-			int tailPos_Y, tailPos_X;
+			int tailPos_Y = 0, tailPos_X = 0;
 			tailPos_Y = wrm_allPos_YX[0][*wrm_len];
 			tailPos_X = wrm_allPos_YX[1][*wrm_len];
 			// Move all segments on head's position.
@@ -255,7 +261,7 @@ void SpawnFood(
 	int available_Y = world_Y - 2;
 	int available_X = world_X - 2; // Walls take space.
 	int noOfSpawns = rand() % (food_max) + 1; // Spawn 1 - Max food_max.
-	int foundIt, ranPos_Y, ranPos_X, notFood, notHead, notSegment;
+	int foundIt = 0, ranPos_Y = 0, ranPos_X = 0, notFood = 0, notHead = 0, notSegment = 0;
 	while (*food_no < noOfSpawns)
 	{
 		foundIt = FALSE; //Only empty positions can be food coords.
@@ -326,10 +332,12 @@ void PlaceWorm(
 		*wrm_headTurn = WORMRIGHT;
 		segment_X -= 1;
 	}
-	//Update position data.
+	// AddSegment() allocates + 1 memory, therefore can't be used at wrm_len = 0.
 	*wrm_head_Y = worldCenter_Y;
 	*wrm_head_X = worldCenter_X;
-	AddSegment (segment_Y, segment_X, wrm_len, wrm_allPos_YX);
+	*wrm_len = 0;
+	wrm_allPos_YX[0][0] = segment_Y;
+	wrm_allPos_YX[1][0] = segment_X;
 }
 
 /*Generates a game-world map of parameter-size.*/
