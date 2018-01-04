@@ -33,9 +33,6 @@
 #define WORLD_SMALL_X		20
 
 
-void IntArray_Realloc ( int *arr, int realloc_size);
-
-
 /*WORM BEHAVIOR*/
 void InputRespond (char *wrm_headTurn);
 int DidILose(
