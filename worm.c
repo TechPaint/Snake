@@ -58,7 +58,7 @@ int main ()
 
 
 	// ! Coord of every asset is stored in array located in pointer array. !
-	
+
 	int *food_YX[2];
 	food_YX[0] = calloc (food_max, sizeof (int));
 	food_YX[1] = calloc (food_max, sizeof (int));
@@ -189,9 +189,9 @@ void InputDificulty (int *dificulty, int *wrm_step_len, int scrnMax_Y, int scrnM
 	int scrnCenter_X = scrnMax_X / 2;
 	attron (COLOR_PAIR(2));
 	mvprintw (0, scrnCenter_X / 2, "Please, pick your dificulty (KeyArrows): ");
-	mvprintw (scrnCenter_Y, 0, "Easy	<--");
-	mvprintw (scrnCenter_Y, scrnMax_X - 14, "->	Medium");
-	mvprintw (scrnMax_Y - 1, scrnCenter_X - 4, "v Hard");
+	mvprintw (scrnCenter_Y, 0, "Easy <--");
+	mvprintw (scrnCenter_Y, scrnMax_X - strlen("-> Medium"), "-> Medium");
+	mvprintw (scrnMax_Y - 1, scrnCenter_X - strlen("v Hard"), "v Hard");
 	refresh ();
 
 	while (*dificulty == 0) // Wait until dificutly is chosen.
@@ -461,7 +461,7 @@ void ShowIntro (int scrnMax_Y, int scrnMax_X)
 	int center_X = scrnMax_X / 2;
 	
 	char head = WORMRIGHT, seg = WORMSEGMENT, food = FOOD;
-	int  headPos = center_X, segPos = headPos -1, foodPos = headPos + 5; // X coords
+	int  headPos = center_X, segPos = headPos -1, foodPos = headPos + 1; // X coords
 
 	while (headPos <= foodPos) // Move worm right till food is reached.
 	{
@@ -489,7 +489,7 @@ void ShowIntro (int scrnMax_Y, int scrnMax_X)
 	};
 	ArrayDraw_Char_2d (5, 43, logo); // Draw logo after 'intro snake' eats food.
 	refresh ();
-	usleep (SECOND * 2);
+	usleep (SECOND * 1);
 	clear ();
 	attroff (COLOR_PAIR(1));
 }
