@@ -11,37 +11,36 @@ int main ()
 	start_color ();
 	init_pair (1, COLOR_GREEN, COLOR_BLACK); // Intro
 	init_pair (2, COLOR_RED, COLOR_BLACK); // DificultyPick 
-	init_pair (3, COLOR_WHITE, COLOR_BLACK); // WorldPick
-	init_pair (4, COLOR_BLACK, COLOR_WHITE); // Game
+	init_pair (3, COLOR_BLACK, COLOR_WHITE); // Game
+	init_pair (4, COLOR_BLUE, COLOR_BLACK); // Score
 
-	// NCurses tweaks.
-	cbreak (); // Disable line buffering.
-	curs_set (0); // Hide blinking cursor position.
-	nodelay (stdscr, TRUE); // Don't wait for EOF/newline on getch().
-	noecho (); // Don't print getch() chars.
-	keypad (stdscr, TRUE); // Collect input.
 	srand (time(NULL)); //Initialize random number generator.
 
+	// NCurses tweaks.
+	keypad (stdscr, TRUE); // Collect input.
+	cbreak (); // Disable line buffering.
+	noecho (); // Don't print getch() chars.
+	curs_set (0); // Hide blinking cursor position.
+	nodelay (stdscr, TRUE); // Don't wait for EOF/newline on getch().
 
-	int gameActive = TRUE;
-		// DEBUG !!! int dificulty = 0,
-	int wrm_step_len = 0;
-	int food_max = 0; // Max no. of food items in world.
-	int food_no = 0; // Current no. of food items in world.
-	int world_Y = 0, world_X = 0;
 
 	// Show intro, ask for  Dificulty, World Size.
 	if (SHOW_INTRO == TRUE) {ShowIntro (scrnMax_Y, scrnMax_X);}
 
-	// DEBUG !!!
-	// GetDificulty (&dificulty, &wrm_step_len, scrnMax_Y, scrnMax_X);
-	// GetWorldSize (&gameActive, &food_max, &world_Y, &world_X, scrnMax_Y, scrnMax_X);
-	wrm_step_len = SECOND * 0.2;
-	food_max = 5;
-	world_Y = WORLD_LARGE_Y; 
-	world_X = WORLD_LARGE_X;
+	int dificulty = 0;
+	int wrm_step_len = 0;
 
-	if (gameActive == FALSE) {return 1;} // Resolution error. Quit the game.
+	InputDificulty (&dificulty, &wrm_step_len, scrnMax_Y, scrnMax_X);
+
+	int food_no = 0; // Current no. of food items in world.
+	int food_max = 0; // Max no. of food items in world.
+	int score = 0;
+	int score_Y = 0, score_X = 0; // Scoreboard coords.
+	int world_Y = 0, world_X = 0;
+	WorldSetDims(
+		&food_max, &score_Y, &score_X, 
+		&world_Y, &world_X, scrnMax_Y, scrnMax_X);
+
 
 	// Allocate memory for, create world array. Score is drawn separately from world.
 	char *world[world_Y];
@@ -49,8 +48,7 @@ int main ()
 	{
 		world[i] = calloc (world_X, sizeof (char));
 	}
-	CreateWorld (world_Y, world_X, world);
-	int score = 0, score_Y = world_Y / 2, score_X = world_X + 2; 
+	WorldArrayCreate (world_Y, world_X, world);
 
 	char wrm_headTurn = '0';
 	int wrm_head_X = 0, wrm_head_Y = 0, wrm_len = 0;
@@ -72,16 +70,21 @@ int main ()
 	wrm_allPos_YX[1] = calloc (worldSize, sizeof (int));
 
 	// Start the game
-	attron (COLOR_PAIR(4));
-	CharArrayPtr_Draw (world_Y, world_X, world);
-	PlaceWorm(
+	int gameActive = TRUE;
+	attron (COLOR_PAIR(3));
+
+	// Draw World. Only updated positions are refreshed during game.
+	ArrayDraw_Char_Ptr (world_Y, world_X, world);
+
+	WormPlace(
 		&wrm_head_Y, &wrm_head_X, &wrm_headTurn, 
 		wrm_allPos_YX, &wrm_len, world_Y, world_X);
-	SpawnFood(
+	FoodSpawn(
 		wrm_head_Y, wrm_head_X, wrm_allPos_YX, wrm_len, 
 		world_Y, world_X, food_max, &food_no, food_YX);
-	DrawAssets(
-		wrm_head_Y, wrm_head_X, wrm_headTurn, wrm_allPos_YX, wrm_len, food_no, food_YX);
+		DrawAssets(
+			wrm_head_Y, wrm_head_X, wrm_headTurn, 
+			wrm_allPos_YX, wrm_len, food_no, food_YX);
 
 	while (gameActive)
 	{
@@ -89,11 +92,13 @@ int main ()
 			&wrm_head_Y, &wrm_head_X, wrm_allPos_YX, &wrm_len, 
 			food_max, &food_no, &score, score_Y, score_X, food_YX, world_Y, world_X);
 		InputRespond (&wrm_headTurn);
-		MoveWorm (&wrm_head_Y, &wrm_head_X, &wrm_headTurn, wrm_allPos_YX, wrm_len);
+		WormMove (&wrm_head_Y, &wrm_head_X, &wrm_headTurn, wrm_allPos_YX, wrm_len);
 		DrawAssets(
-			wrm_head_Y, wrm_head_X, wrm_headTurn, wrm_allPos_YX, wrm_len, food_no, food_YX);
+			wrm_head_Y, wrm_head_X, wrm_headTurn, 
+			wrm_allPos_YX, wrm_len, food_no, food_YX);
 		refresh ();
-		gameActive = DidILose (wrm_head_Y, wrm_head_X, wrm_allPos_YX, wrm_len, world_Y, world_X);
+
+		gameActive = IsGameOver (wrm_head_Y, wrm_head_X, wrm_allPos_YX, wrm_len, world_Y, world_X);
 		usleep (wrm_step_len);
 	}
 
@@ -104,41 +109,30 @@ int main ()
 	free (wrm_allPos_YX[1]);
 	for (int i = 0; i < world_Y; ++i) {free (world[i]);}
 
-	attroff (COLOR_PAIR(4));
+	attroff (COLOR_PAIR(3));
 	endwin ();	// End curses.
 	printf ("Final length: %d \n", wrm_len + 1);
 	return 0;
 }
 
 
-/*
- * FUNCTIONS
- * .........
- * */
- 
+/* FUNCTIONS
+ * .........*/
 
-/*WORM BEHAVIOR*/
-
-/*Changes head's direction based on user input.*/
-void InputRespond (char *wrm_headTurn)
-{
-	int c = getch();
-	if (c == KEY_UP || c == 'w') {*wrm_headTurn = WORMUP;}
-	else if (c == KEY_DOWN || c == 's') {*wrm_headTurn = WORMDOWN;}
-	else if (c == KEY_LEFT || c == 'a') {*wrm_headTurn = WORMLEFT;}
-	else if (c == KEY_RIGHT || c == 'd') {*wrm_headTurn = WORMRIGHT;}
-}
+/*GAME STATUS*/
 
 /*Checks, if worm ate his tail/hit wall. Returns 0 if game over.*/
-int DidILose(
+int IsGameOver(
 	int wrm_head_Y, int wrm_head_X, int *wrm_allPos_YX[], int wrm_len, int world_Y, int world_X)
 {
 	int edge_Y = world_Y - 1;
 	int edge_X = world_X - 1;
+
 	// Top/Bottom edge of world breached.
 	if (wrm_head_Y <= 0 || wrm_head_Y >= edge_Y) {return 0;}
 	// Left/Right edge of world breached.
 	if (wrm_head_X <= 0 || wrm_head_X >= edge_X) {return 0;}
+
 	// Head-Segment collision.
 	for (int idx = 0; idx < wrm_len; ++idx)
 	{
@@ -152,8 +146,9 @@ int DidILose(
 
 /*Looks, if food item is located in front of head, if yes, expands worm.*/
 void IsItFood(
-	int *wrm_head_Y, int *wrm_head_X, int *wrm_allPos_YX[], int *wrm_len, int food_max, 
-	int *food_no, int *score, int score_Y, int score_X, int *food_YX[], int world_Y, int world_X)
+	int *wrm_head_Y, int *wrm_head_X, int *wrm_allPos_YX[], 
+	int *wrm_len, int food_max, int *food_no, int *score, 
+	int score_Y, int score_X, int *food_YX[], int world_Y, int world_X)
 {
 	for (int idx = 0; idx < food_max; ++idx) // Necessary to loop through all idx pos.
 	{
@@ -161,23 +156,24 @@ void IsItFood(
 		{
 			// Increment, draw score.
 			*score += 1;
-			mvprintw (score_Y, score_X, "Score: %d", *score);
+			mvprintw (score_Y, score_X, SCORE_MSG, *score); // Score
 
 			int tailPos_Y = 0, tailPos_X = 0;
 			tailPos_Y = wrm_allPos_YX[0][*wrm_len];
 			tailPos_X = wrm_allPos_YX[1][*wrm_len];
+
 			// Move all segments on head's position.
-			MoveSegments(
+			SegmentsMove(
 				*wrm_head_Y, *wrm_head_X, wrm_allPos_YX, *wrm_len);
 			// Add segment to the former last position.
-			AddSegment (tailPos_Y, tailPos_X, wrm_len, wrm_allPos_YX);
+			SegmentAdd (tailPos_Y, tailPos_X, wrm_len, wrm_allPos_YX);
 			// Clean up after old food, spawn new one if all consumed.
 			food_YX[0][idx]= - 1;
 			food_YX[1][idx]= - 1;
 			*food_no -= 1;
 			if (*food_no < 1)
 			{
-				SpawnFood(
+				FoodSpawn(
 					*wrm_head_Y, *wrm_head_X, wrm_allPos_YX, 
 					*wrm_len, world_Y, world_X, food_max, food_no, food_YX);
 			}
@@ -186,8 +182,58 @@ void IsItFood(
 	}
 }
 
+/*Asks user to select dificulty.*/
+void InputDificulty (int *dificulty, int *wrm_step_len, int scrnMax_Y, int scrnMax_X)
+{
+	int scrnCenter_Y = scrnMax_Y / 2;
+	int scrnCenter_X = scrnMax_X / 2;
+	attron (COLOR_PAIR(2));
+	mvprintw (0, scrnCenter_X / 2, "Please, pick your dificulty (KeyArrows): ");
+	mvprintw (scrnCenter_Y, 0, "Easy	<--");
+	mvprintw (scrnCenter_Y, scrnMax_X - 14, "->	Medium");
+	mvprintw (scrnMax_Y - 1, scrnCenter_X - 4, "v Hard");
+	refresh ();
+
+	while (*dificulty == 0) // Wait until dificutly is chosen.
+	{
+		int c = getch();
+		if (c == KEY_LEFT) 
+		{
+			*dificulty = DIFICULTY_EASY; 
+			*wrm_step_len = SECOND * 0.4;
+		}
+		else if (c == KEY_RIGHT) 
+		{
+			*dificulty = DIFICULTY_MEDIUM; 
+			*wrm_step_len = SECOND * 0.2;
+		}
+		else if (c == KEY_DOWN) 
+		{
+			*dificulty = DIFICULTY_HARD;  
+			*wrm_step_len = SECOND * 0.1;
+		}
+	}
+	clear ();
+	refresh ();
+	attroff (COLOR_PAIR(2));
+}
+
+
+/*WORM BEHAVIOR*/
+
+/*Changes head's direction based on user input.*/
+void InputRespond (char *wrm_headTurn)
+{
+	int c = getch();
+	if (c == KEY_UP || c == 'w') {*wrm_headTurn = WORMUP;}
+	else if (c == KEY_DOWN || c == 's') {*wrm_headTurn = WORMDOWN;}
+	else if (c == KEY_LEFT || c == 'a') {*wrm_headTurn = WORMLEFT;}
+	else if (c == KEY_RIGHT || c == 'd') {*wrm_headTurn = WORMRIGHT;}
+}
+
+
 /*Stores new Y, X coords of worm segments into their arrays, increments worm_len.*/
-void AddSegment(int newLoc_Y, int newLoc_X, int *wrm_len, int *wrm_allPos_YX[])
+void SegmentAdd(int newLoc_Y, int newLoc_X, int *wrm_len, int *wrm_allPos_YX[])
 {
 	*wrm_len += 1; // wormPositions are indexed from 0.
 	wrm_allPos_YX[0][*wrm_len] = newLoc_Y;
@@ -195,11 +241,11 @@ void AddSegment(int newLoc_Y, int newLoc_X, int *wrm_len, int *wrm_allPos_YX[])
 }
 
 /*Moves worm's head along with segments.*/
-void MoveWorm(
+void WormMove(
 	int *wrm_head_Y, int *wrm_head_X, char *wrm_headTurn, int *wrm_allPos_YX[], int wrm_len)
 {
 	// We will move segments where head is now.
-	MoveSegments(
+	SegmentsMove(
 			*wrm_head_Y, *wrm_head_X, wrm_allPos_YX, wrm_len);
 
 	// Move head to the direction it's facing to.
@@ -211,7 +257,7 @@ void MoveWorm(
 }
 
 /*Moves all worm segments to defined position.*/
-void MoveSegments(int pos_Y, int pos_X, int *wrm_allPos_YX[], int wrm_len)
+void SegmentsMove (int pos_Y, int pos_X, int *wrm_allPos_YX[], int wrm_len)
 {
 	//Move all segments (except 1st one) to X, Y of neigbour segment. 
 	int segmentLocX = 0, segmentLocY = 0;
@@ -237,34 +283,45 @@ void MoveSegments(int pos_Y, int pos_X, int *wrm_allPos_YX[], int wrm_len)
 /*WORLD_GEN*/
 
 /*Sets food coords (1 - food_max) to random Empty position in world.*/
-void SpawnFood(
+void FoodSpawn(
 	int wrm_head_Y, int wrm_head_X, 
 	int *wrm_allPos_YX[], int wrm_len, int world_Y, 
 	int world_X, int food_max, int *food_no, int *food_YX[])
 {
 	int available_Y = world_Y - 2;
 	int available_X = world_X - 2; // Walls take space.
-	int noOfSpawns = rand() % (food_max) + 1; // Spawn 1 - Max food_max.
-	int foundIt = 0, ranPos_Y = 0, ranPos_X = 0, notFood = 0, notHead = 0, notSegment = 0;
+	int noOfSpawns = rand() % (food_max) + 1; // Spawn 1 - food_max food.
+
+	int foundIt = 0; 
+	int ranPos_Y = 0, ranPos_X = 0;
+	int notWall = 0, notFood = 0, notHead = 0, notSegment = 0;
+
 	while (*food_no < noOfSpawns)
 	{
-		foundIt = FALSE; //Only empty positions can be food coords.
-		while (foundIt != TRUE)
+		foundIt = FALSE; 
+		while (foundIt != TRUE) // Find empty world position to place food in.
 		{
-			notHead = notFood = notSegment = TRUE; 
+			notWall = TRUE, notHead = TRUE, notFood = TRUE, notSegment = TRUE; 
+
 			ranPos_Y = rand() % (available_Y - 1) + 1; 
 			ranPos_X = rand() % (available_X - 1) + 1; 
-			//Check if Head/Food/Segment doesn't occupy given position.
+
+			// Walls (vertical, horizontal world edge).
+			if (ranPos_Y <= 0 || ranPos_Y >= world_Y) {notWall = FALSE; continue;}
+			if (ranPos_X <= 0 || ranPos_X >= world_X) {notWall = FALSE; continue;}
+
+			//Head coords.
 			if (ranPos_Y == wrm_head_Y && ranPos_X == wrm_head_X) {notHead = FALSE; continue;}
-			for (int idx = 0; idx < *food_no; ++idx) // Food
+
+			for (int idx = 0; idx < *food_no; ++idx) // Food coords.
 			{
-				if (ranPos_Y == wrm_allPos_YX[0][idx] && ranPos_X == wrm_allPos_YX[1][idx]) 
+				if (ranPos_Y == food_YX[0][idx] && ranPos_X == food_YX[1][idx]) 
 				{
 					notFood = FALSE; 
 					break;
 				}
 			}
-			for (int idx = wrm_len; idx >= 1; --idx)
+			for (int idx = wrm_len; idx >= 1; --idx) // Segment coords.
 			{
 				if (ranPos_Y == wrm_allPos_YX[0][idx] && ranPos_X == wrm_allPos_YX[1][idx]) 
 				{
@@ -272,11 +329,13 @@ void SpawnFood(
 					break;
 				}
 			}
-			if (notHead == TRUE && notFood == TRUE && notSegment == TRUE) 
+
+			if (notWall == TRUE && notHead == TRUE && notFood == TRUE && notSegment == TRUE) 
 			{
-				foundIt = TRUE;
-			} // Nothing occupies chosen position. Break loop.
+				foundIt = TRUE; // Nothing occupies chosen position. Break loop.
+			}
 		}
+		// Adequate position found, set food coords. 
 		food_YX[0][*food_no] = ranPos_Y; 
 		food_YX[1][*food_no] = ranPos_X; 
 		*food_no += 1;
@@ -284,7 +343,7 @@ void SpawnFood(
 }
 
 /*Places worm +- near the world center, turns him into random direction.*/
-void PlaceWorm(
+void WormPlace(
 	int *wrm_head_Y, int *wrm_head_X, char *wrm_headTurn, 
 	int *wrm_allPos_YX[], int *wrm_len, int world_Y, int world_X)
 {
@@ -316,7 +375,6 @@ void PlaceWorm(
 		*wrm_headTurn = WORMRIGHT;
 		segment_X -= 1;
 	}
-	// AddSegment() allocates + 1 memory, therefore can't be used at wrm_len = 0.
 	*wrm_head_Y = worldCenter_Y;
 	*wrm_head_X = worldCenter_X;
 	*wrm_len = 0;
@@ -325,7 +383,7 @@ void PlaceWorm(
 }
 
 /*Generates a game-world map of parameter-size.*/
-void CreateWorld (int world_Y, int world_X, char *world[])
+void WorldArrayCreate (int world_Y, int world_X, char *world[])
 {
 	//Arrays are indexed from '0'.
 	int lastLine = world_Y - 1;
@@ -335,15 +393,15 @@ void CreateWorld (int world_Y, int world_X, char *world[])
 	world[0][lastCol] = WORLD_CORNER;		//Upper-Right
 	world[lastLine][0] = WORLD_CORNER;		//Lower-Left
 	world[lastLine][lastCol] = WORLD_CORNER;		//Lower-Right
-	CharArrayPtr_ColumnFill(0, 1, lastCol, world, WORLD_HORIZONTAL_WALL);
-	CharArrayPtr_ColumnFill(lastLine, 1, lastCol, world, WORLD_HORIZONTAL_WALL);
+	ArrayFillCol_Char_Ptr(0, 1, lastCol, world, WORLD_HORIZONTAL_WALL);
+	ArrayFillCol_Char_Ptr(lastLine, 1, lastCol, world, WORLD_HORIZONTAL_WALL);
 	/*Loop over lines between upper walls, build side walls 
 	(1st, Last column of a line), fill rest with empty spaces.*/
 	for (int line_idx = 1; line_idx < lastLine; ++line_idx)
 	{
 		world[line_idx][0] = WORLD_VERTICAL_WALL;
 		world[line_idx][lastCol] = WORLD_VERTICAL_WALL;
-		CharArrayPtr_ColumnFill (line_idx, 1, lastCol, world, WORLD_EMPTY_SPACE);
+		ArrayFillCol_Char_Ptr (line_idx, 1, lastCol, world, WORLD_EMPTY_SPACE);
 	}
 }
 
@@ -356,14 +414,43 @@ void DrawAssets(
 	int *wrm_allPos_YX[], int wrm_len, int food_no, int *food_YX[])
 {
 	mvprintw (wrm_head_Y, wrm_head_X, "%c", wrm_headTurn); // Head
+
 	for (int idx = wrm_len; idx >= 0; --idx) // Segments
 	{
 		mvprintw (wrm_allPos_YX[0][idx], wrm_allPos_YX[1][idx], "%c", WORMSEGMENT);
 	}
-	for (int idx = 0; idx <= food_no; ++idx) // Food
+
+	for (int idx = 0; idx < food_no; ++idx) // Food
 	{
 		mvprintw (food_YX[0][idx], food_YX[1][idx], "%c", FOOD);
 	}
+}
+
+/*Match world, factors to screen size.*/
+void WorldSetDims(
+	int *food_max,  int *score_Y, int *score_X, 
+	int *world_Y, int *world_X, int scrnMax_Y, int scrnMax_X)
+{
+
+	// Check if screen is big enough If not, exit.
+	if (scrnMax_Y >= 8 && scrnMax_X >= 10) 
+	{
+		// Score is placed in bottom-center of world.
+		*world_Y = scrnMax_Y;
+		*score_Y = scrnMax_Y - 1; 
+
+		*world_X = scrnMax_X;
+		*score_X = (*world_X / 2);
+
+		*food_max = *world_Y / 4;
+	}
+	else 
+	{
+		mvprintw (scrnMax_Y / 2, 0, "Screen size too small for this resolution.");
+		usleep (3 * SECOND);
+		exit (1);
+	}
+
 }
 
 /*Shows dynamic on screen intro.*/
@@ -400,102 +487,18 @@ void ShowIntro (int scrnMax_Y, int scrnMax_X)
 		{"   |     |   \\ |   /      \\   |   \\    |   "},
 		{"===      |    \\|  /        \\  |    \\   |==="}
 	};
-	CharArray2d_Draw (5, 43, logo); // Draw logo after 'intro snake' eats food.
+	ArrayDraw_Char_2d (5, 43, logo); // Draw logo after 'intro snake' eats food.
 	refresh ();
 	usleep (SECOND * 2);
 	clear ();
 	attroff (COLOR_PAIR(1));
 }
 
-/*Asks user to select dificulty.*/
-void GetDificulty (int *dificulty, int *wrm_step_len, int scrnMax_Y, int scrnMax_X)
-{
-	int scrnCenter_Y = scrnMax_Y / 2;
-	int scrnCenter_X = scrnMax_X / 2;
-	attron (COLOR_PAIR(2));
-	mvprintw (0, scrnCenter_X / 2, "Please, pick your dificulty (KeyArrows): ");
-	mvprintw (scrnCenter_Y, 0, "Easy	<--");
-	mvprintw (scrnCenter_Y, scrnMax_X - 14, "->	Medium");
-	mvprintw (scrnMax_Y - 1, scrnCenter_X - 4, "v Hard");
-	refresh ();
-	while (*dificulty == 0) // Wait until dificutly is chosen.
-	{
-		int c = getch();
-		if (c == KEY_LEFT) 
-		{
-			*dificulty = DIFICULTY_EASY; 
-			*wrm_step_len = SECOND * 0.5;
-		}
-		else if (c == KEY_RIGHT) 
-		{
-			*dificulty = DIFICULTY_MEDIUM; 
-			*wrm_step_len = SECOND * 0.3;
-		}
-		else if (c == KEY_DOWN) 
-		{
-			*dificulty = DIFICULTY_HARD;  
-			*wrm_step_len = SECOND * 0.2;
-		}
-	}
-	clear ();
-	attroff (COLOR_PAIR(2));
-}
 
-/*Asks user to select world size*/
-void GetWorldSize (int *gameActive, int *food_max, int *world_Y, int *world_X, int scrnMax_Y, int scrnMax_X)
-{
-	int scrnCenter_Y = scrnMax_Y / 2;
-	int scrnCenter_X = scrnMax_X / 2;
-	attron (COLOR_PAIR(3));
-	mvprintw (0, scrnCenter_X / 2, "Please, pick world size (KeyArrows): ");
-	mvprintw (scrnCenter_Y, 0, "Large	<--");
-	mvprintw (scrnCenter_Y, scrnMax_X - 14, "->	Medium");
-	mvprintw (scrnMax_Y - 1, scrnCenter_X - 4, "v Small");
-	refresh ();
-	while (*world_Y == 0) // Wait until user chooses.
-	{
-		int c = getch();
-		if (c == KEY_LEFT) 
-		{
-			*food_max = 5;
-			*world_Y = WORLD_LARGE_Y; 
-			*world_X = WORLD_LARGE_X;
-		}
-		else if (c == KEY_RIGHT) 
-		{
-			*food_max = 3;
-			*world_Y = WORLD_MEDIUM_Y; 
-			*world_X = WORLD_MEDIUM_X;
-		}
-		else if (c == KEY_DOWN) 
-		{
-			*food_max = 2;
-			*world_Y = WORLD_SMALL_Y; 
-			*world_X = WORLD_SMALL_X;
-		}
-	}
-	// Check if screen is big enough If not, match screen if it meets min. requirements.
-	if (scrnMax_Y < *world_Y || scrnMax_X < *world_X) 
-	{
-		clear ();
-		mvprintw (scrnCenter_Y, 0, "Screen size too small for this resolution.");
-		if (scrnMax_Y >= 8 && scrnMax_X >= 10) 
-		{
-			*world_Y = scrnMax_Y; 
-			*world_X = scrnMax_X;
-		}
-		else 
-		{
-			mvprintw (scrnCenter_Y + 1, 0, "Actually, for every resolution. Please, increase window size.");
-			*gameActive = FALSE;
-		}
-	}
-	clear ();
-	attroff (COLOR_PAIR(3));
-}
+/*ARRAY MANIPULATION*/
 
-/*CURSES! Draws ENTIRE world (array[rows][cols]) to the screen using 'printw()'.*/
-void CharArray2d_Draw (int arr_Y, int arr_X, char arr[][arr_X])
+/*CURSES! Draws 2D array to the screen using 'mvprintw()'.*/
+void ArrayDraw_Char_2d (int arr_Y, int arr_X, char arr[][arr_X])
 {
 	for (int line_idx = 0; line_idx < arr_Y; ++line_idx)
 	{
@@ -506,8 +509,8 @@ void CharArray2d_Draw (int arr_Y, int arr_X, char arr[][arr_X])
 	}
 }
 
-/*CURSES! Draws ENTIRE world (*array[rows]) to the screen using 'printw()'.*/
-void CharArrayPtr_Draw (int arr_Y, int arr_X, char *arr[arr_Y])
+/*CURSES! *ptr[] array containing rows of chars to the screen using 'mvprintw()'.*/
+void ArrayDraw_Char_Ptr (int arr_Y, int arr_X, char *arr[arr_Y])
 {
 	for (int line_idx = 0; line_idx < arr_Y; ++line_idx)
 	{
@@ -515,22 +518,11 @@ void CharArrayPtr_Draw (int arr_Y, int arr_X, char *arr[arr_Y])
 		{
 			mvprintw (line_idx, col_idx, "%c", arr[line_idx][col_idx]);
 		}
-	}
-}
-
-/*Fills a single column of pointer array with given char.*/
-void CharArrayPtr_ColumnFill(
-	int lineNo, int startCol, int endCol, char *Array_2D[], char fillWithMe)
-{
-	int idx = startCol;
-	for (; idx < endCol; ++idx)
-	{
-		Array_2D[lineNo][idx] = fillWithMe;
 	}
 }
 
 //Fills array positions with specified character.
-void IntArray_Fill (int array[], int array_length, int fill_with_this)
+void ArrayFill_Int (int array[], int array_length, int fill_with_this)
 {
 	for ( int i = 0; i < array_length ; ++i ) 
 	{
@@ -539,9 +531,20 @@ void IntArray_Fill (int array[], int array_length, int fill_with_this)
 }
 
 /*Fills a single column of 2D array with given integer.*/
-void IntArray2d_ColumnFill(
+void ArrayFillCol_Int_2d(
 	int lineNo, int startCol, int endCol, 
 	int total_cols, int Array_2D[][total_cols], int fillWithMe)
+{
+	int idx = startCol;
+	for (; idx < endCol; ++idx)
+	{
+		Array_2D[lineNo][idx] = fillWithMe;
+	}
+}
+
+/*Fills a single column of pointer array with given char.*/
+void ArrayFillCol_Char_Ptr(
+	int lineNo, int startCol, int endCol, char *Array_2D[], char fillWithMe)
 {
 	int idx = startCol;
 	for (; idx < endCol; ++idx)
